@@ -35,7 +35,7 @@ function badgeLabel(id: string): string {
 }
 
 export function Profile() {
-  const { profile, setTheme, updateName, resetAll } = useProfile();
+  const { profile, setTheme, setShowTutorials, updateName, resetAll } = useProfile();
   const navigate = useNavigate();
   const [nameEdit, setNameEdit] = useState(profile?.name ?? '');
 
@@ -88,6 +88,21 @@ export function Profile() {
               Save
             </button>
           </div>
+        </div>
+
+        <div>
+          <div className="label">Lesson tutorials</div>
+          <p className="muted" style={{ margin: '0 0 0.5rem', fontSize: '0.9rem' }}>
+            Walkthrough before the quiz. Turn off if you already know the skill.
+          </p>
+          <label className="tutorial-check" style={{ justifyContent: 'flex-start' }}>
+            <input
+              type="checkbox"
+              checked={profile.showTutorials !== false}
+              onChange={(e) => setShowTutorials(e.target.checked)}
+            />
+            Show lesson tutorials
+          </label>
         </div>
 
         <div>

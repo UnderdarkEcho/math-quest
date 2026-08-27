@@ -32,6 +32,7 @@ export function loadProfile(): UserProfile | null {
         parsed.snapProgress.bestRoundMs = {};
       }
     }
+    if (typeof parsed.showTutorials !== 'boolean') parsed.showTutorials = true;
     return parsed;
   } catch {
     return null;

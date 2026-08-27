@@ -36,6 +36,8 @@ export interface UserProfile {
   courses: CourseProgress[];
   tableProgress: TableProgress;
   snapProgress: SnapProgress;
+  /** Lesson walkthrough before the quiz. Default true. */
+  showTutorials: boolean;
 }
 
 export interface CourseProgress {

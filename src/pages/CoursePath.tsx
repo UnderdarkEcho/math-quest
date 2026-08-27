@@ -6,7 +6,7 @@ import { OP_LABELS, OP_SYMBOLS } from '../types';
 
 export function CoursePath() {
   const { courseId } = useParams();
-  const { profile } = useProfile();
+  const { profile, setShowTutorials } = useProfile();
   if (!profile || !courseId) return <Navigate to="/select" replace />;
 
   const meta = getCourse(courseId);
@@ -68,21 +68,35 @@ export function CoursePath() {
             .filter(Boolean)
             .join(' ');
 
-          if (!unlocked) {
-            return (
-              <div key={i} className={className} aria-disabled>
-                <span>Lesson {i + 1}</span>
-                <span>🔒</span>
-              </div>
-            );
-          }
-
-          return (
-            <Link key={i} to={`/lesson/${courseId}/${i}`} className={className}>
+          const node = !unlocked ? (
+            <div className={className} aria-disabled>
+              <span>Lesson {i + 1}</span>
+              <span>🔒</span>
+            </div>
+          ) : (
+            <Link to={`/lesson/${courseId}/${i}`} className={className}>
               <span>Lesson {i + 1}</span>
               <span>{mastered ? '✅' : '▶'}</span>
             </Link>
           );
+
+          if (i === 0) {
+            return (
+              <div key={i} className="path-first">
+                {node}
+                <label className="tutorial-check">
+                  <input
+                    type="checkbox"
+                    checked={profile.showTutorials !== false}
+                    onChange={(e) => setShowTutorials(e.target.checked)}
+                  />
+                  Show tutorial
+                </label>
+              </div>
+            );
+          }
+
+          return <div key={i} className="path-first">{node}</div>;
         })}
 
         <div className={`path-node ${allDone ? 'mastered' : 'locked'}`}>

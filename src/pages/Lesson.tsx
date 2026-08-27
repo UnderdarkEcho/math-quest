@@ -26,8 +26,11 @@ export function Lesson() {
     return buildLessonTeach(meta.operation, meta.grade, lessonIndex, profile.themeId);
   }, [meta, profile, lessonIndex]);
 
-  const [phase, setPhase] = useState<Phase>('teach');
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const skipTeach = profile?.showTutorials === false && meta && !Number.isNaN(lessonIndex);
+  const [phase, setPhase] = useState<Phase>(skipTeach ? 'quiz' : 'teach');
+  const [questions, setQuestions] = useState<Question[]>(() =>
+    skipTeach ? generateQuiz(meta.operation, meta.grade, lessonIndex, QUIZ_LENGTH) : [],
+  );
   const [qIndex, setQIndex] = useState(0);
   const [value, setValue] = useState('');
   const [feedback, setFeedback] = useState<'idle' | 'ok' | 'bad'>('idle');

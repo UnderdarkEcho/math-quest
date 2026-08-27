@@ -23,6 +23,7 @@ interface ProfileContextValue {
   createProfile: (name: string, themeId: ThemeId) => void;
   updateName: (name: string) => void;
   setTheme: (themeId: ThemeId) => void;
+  setShowTutorials: (on: boolean) => void;
   startCourse: (grade: Grade, operation: Operation) => string;
   recordPracticeXp: (correctCount: number) => void;
   completeLessonMastery: (
@@ -79,6 +80,14 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     [profile, persist],
   );
 
+  const setShowTutorials = useCallback(
+    (on: boolean) => {
+      if (!profile) return;
+      persist({ ...profile, showTutorials: on });
+    },
+    [profile, persist],
+  );
+
   const startCourse = useCallback(
     (grade: Grade, operation: Operation) => {
       if (!profile) return '';
@@ -130,6 +139,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       createProfile,
       updateName,
       setTheme,
+      setShowTutorials,
       startCourse,
       recordPracticeXp,
       completeLessonMastery,
@@ -142,6 +152,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       createProfile,
       updateName,
       setTheme,
+      setShowTutorials,
       startCourse,
       recordPracticeXp,
       completeLessonMastery,

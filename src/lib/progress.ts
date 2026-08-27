@@ -19,6 +19,7 @@ export function createEmptyProfile(name: string, themeId: UserProfile['themeId']
     courses: [],
     tableProgress: emptyTableProgress(),
     snapProgress: emptySnapProgress(),
+    showTutorials: true,
   };
 }
 
