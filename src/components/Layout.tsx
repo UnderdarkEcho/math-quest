@@ -1,5 +1,25 @@
+import { Component, type ReactNode } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext';
+
+class PageError extends Component<{ children: ReactNode }, { message: string | null }> {
+  state = { message: null as string | null };
+  static getDerivedStateFromError(err: Error) {
+    return { message: err?.message || String(err) };
+  }
+  render() {
+    if (this.state.message) {
+      return (
+        <div className="card">
+          <h2>This page hit a snag</h2>
+          <p>{this.state.message}</p>
+          <p className="muted">Refresh the tab and try again.</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export function Layout() {
   const { profile } = useProfile();
@@ -49,7 +69,9 @@ export function Layout() {
         )}
       </header>
       <main>
-        <Outlet />
+        <PageError>
+          <Outlet />
+        </PageError>
       </main>
     </div>
   );

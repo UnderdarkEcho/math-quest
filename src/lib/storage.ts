@@ -33,6 +33,9 @@ export function loadProfile(): UserProfile | null {
       }
     }
     if (typeof parsed.showTutorials !== 'boolean') parsed.showTutorials = true;
+    if (parsed.ageBand !== 'early' && parsed.ageBand !== 'upper' && parsed.ageBand !== 'middle' && parsed.ageBand !== 'high') {
+      parsed.ageBand = 'upper';
+    }
     return parsed;
   } catch {
     return null;

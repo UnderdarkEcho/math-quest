@@ -1,7 +1,5 @@
-import { badgeId, getCourse } from '../data/catalog';
+import { courseId, getCourse } from '../data/catalog';
 import type { CourseProgress, Grade, Operation, UserProfile } from '../types';
-import { LESSONS_PER_COURSE } from '../types';
-import { courseId } from '../data/catalog';
 import { emptySnapProgress } from './snapProgress';
 import { emptyTableProgress } from './tablesProgress';
 
@@ -13,6 +11,7 @@ export function createEmptyProfile(name: string, themeId: UserProfile['themeId']
   return {
     name: name.trim(),
     themeId,
+    ageBand: 'upper',
     createdAt: new Date().toISOString(),
     totalXp: 0,
     badges: [],
@@ -28,15 +27,22 @@ export function startOrGetCourse(
   grade: Grade,
   operation: Operation,
 ): { profile: UserProfile; course: CourseProgress } {
-  const id = courseId(grade, operation);
+  return startOrGetCourseById(profile, courseId(grade, operation));
+}
+
+export function startOrGetCourseById(
+  profile: UserProfile,
+  id: string,
+): { profile: UserProfile; course: CourseProgress } {
   const existing = profile.courses.find((c) => c.courseId === id);
   if (existing) {
     return { profile, course: existing };
   }
+  const meta = getCourse(id);
   const course: CourseProgress = {
     courseId: id,
-    grade,
-    operation,
+    grade: meta?.grade,
+    operation: meta?.operation,
     status: 'in_progress',
     completedLessons: [],
     currentLesson: 0,
@@ -79,7 +85,7 @@ export function masterLesson(
   course.completedLessons.push(lessonIndex);
   course.completedLessons.sort((a, b) => a - b);
   course.currentLesson = Math.min(
-    LESSONS_PER_COURSE - 1,
+    courseMeta.lessonCount - 1,
     Math.max(course.currentLesson, lessonIndex + 1),
   );
 
@@ -94,7 +100,7 @@ export function masterLesson(
   if (course.completedLessons.length >= courseMeta.lessonCount) {
     course.status = 'completed';
     course.completedAt = new Date().toISOString();
-    const bid = badgeId(course.grade, course.operation);
+    const bid = courseMeta.badgeId;
     if (!badges.includes(bid)) {
       badges.push(bid);
       badgeAwarded = bid;

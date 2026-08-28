@@ -1,16 +1,18 @@
 import { useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext';
-import { THEME_IMAGES } from '../data/assets';
-import { THEME_PACKS } from '../data/themes';
+import { AgeBandTabs } from '../components/AgeBandTabs';
+import { themeImage } from '../data/assets';
+import { THEME_PACKS, themeVoice } from '../data/themes';
 import { applyTheme } from '../lib/theme';
-import type { ThemeId } from '../types';
+import type { AgeBand, ThemeId } from '../types';
 
 export function Welcome() {
   const { profile, ready, createProfile } = useProfile();
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [themeId, setThemeId] = useState<ThemeId>('default');
+  const [ageBand, setAgeBand] = useState<AgeBand>('upper');
 
   if (!ready) {
     return (
@@ -32,7 +34,7 @@ export function Welcome() {
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    createProfile(name.trim(), themeId);
+    createProfile(name.trim(), themeId, ageBand);
     navigate('/home');
   };
 
@@ -40,7 +42,7 @@ export function Welcome() {
     <div>
       <div className="hero">
         <div className="hero-mascot" aria-hidden>
-          <img src={THEME_IMAGES[themeId]} alt="" />
+          <img src={themeImage(themeId, ageBand)} alt="" />
         </div>
         <h1>Math Quest</h1>
         <p>Learn addition, subtraction, multiplication & division — with a world you love.</p>
@@ -63,6 +65,8 @@ export function Welcome() {
           />
         </div>
 
+        <AgeBandTabs value={ageBand} onChange={setAgeBand} />
+
         <div>
           <div className="label">Pick a theme</div>
           <div className="grid-themes">
@@ -74,7 +78,7 @@ export function Welcome() {
                 onClick={() => pickTheme(t.id)}
               >
                 <img
-                  src={THEME_IMAGES[t.id]}
+                  src={themeImage(t.id, ageBand)}
                   alt=""
                   style={{
                     width: '100%',
@@ -85,7 +89,7 @@ export function Welcome() {
                   }}
                 />
                 <h3>{t.label}</h3>
-                <p style={{ margin: 0, fontSize: '0.9rem' }}>{t.tagline}</p>
+                <p style={{ margin: 0, fontSize: '0.9rem' }}>{themeVoice(t, ageBand).tagline}</p>
               </button>
             ))}
           </div>

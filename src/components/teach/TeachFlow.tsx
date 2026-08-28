@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { LessonTeach } from '../../types';
 import { GuidedCheck } from './GuidedCheck';
+import { GuidedPrompt } from './GuidedPrompt';
 import { WorkedExample } from './WorkedExample';
 
 interface Props {
@@ -29,6 +30,17 @@ export function TeachFlow({ teach, onComplete }: Props) {
     else setIndex((i) => i + 1);
   };
 
+  if (!step) {
+    return (
+      <div className="card">
+        <p>This tutorial could not be built. Start the quiz, or go back and try again.</p>
+        <button type="button" className="btn btn-primary btn-block" onClick={onComplete}>
+          Start quiz
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="card">
       <div className="step-dots" aria-hidden>
@@ -38,7 +50,34 @@ export function TeachFlow({ teach, onComplete }: Props) {
       {step.kind === 'hook' && (
         <div>
           <h2>{step.title}</h2>
-          <p style={{ color: 'var(--color-text)', fontSize: '1.05rem' }}>{step.body}</p>
+          {step.body.split('\n\n').map((para, i) => (
+            <p key={i} style={{ color: 'var(--color-text)', fontSize: '1.05rem' }}>
+              {para}
+            </p>
+          ))}
+          <button type="button" className="btn btn-primary btn-block" onClick={next}>
+            Continue
+          </button>
+        </div>
+      )}
+
+      {step.kind === 'symbols' && (
+        <div>
+          <h2>{step.title}</h2>
+          <p style={{ color: 'var(--color-text)', fontSize: '1.05rem' }}>{step.intro}</p>
+          <div className="symbol-list">
+            {step.items.map((it) => (
+              <div key={it.symbol} className="symbol-row">
+                <span className="symbol-glyph">{it.symbol}</span>
+                <span>{it.meaning}</span>
+              </div>
+            ))}
+          </div>
+          {step.typeHint && (
+            <p className="muted" style={{ marginTop: '0.85rem' }}>
+              {step.typeHint}
+            </p>
+          )}
           <button type="button" className="btn btn-primary btn-block" onClick={next}>
             Continue
           </button>
@@ -66,6 +105,16 @@ export function TeachFlow({ teach, onComplete }: Props) {
           a={step.a}
           b={step.b}
           answer={step.answer}
+          hint={step.hint}
+          onDone={next}
+        />
+      )}
+
+      {step.kind === 'prompt_guided' && (
+        <GuidedPrompt
+          key={`pg-${index}`}
+          prompt={step.prompt}
+          expected={step.expected}
           hint={step.hint}
           onDone={next}
         />

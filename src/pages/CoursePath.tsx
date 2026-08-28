@@ -1,6 +1,7 @@
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext';
-import { getCourse, gradeLabel } from '../data/catalog';
+import { getCourse, gradeLabel, isArithmeticCourse } from '../data/catalog';
+import { getTrackLessons } from '../data/tracks';
 import { isLessonMastered, isLessonUnlocked } from '../lib/progress';
 import { OP_LABELS, OP_SYMBOLS } from '../types';
 
@@ -20,16 +21,20 @@ export function CoursePath() {
     <div className="stack">
       <div>
         <p className="muted" style={{ marginBottom: '0.25rem' }}>
-          {gradeLabel(meta.grade)} grade
+          {isArithmeticCourse(meta) && meta.grade
+            ? `${gradeLabel(meta.grade)} grade`
+            : 'Track'}
         </p>
         <h1>
-          {OP_SYMBOLS[meta.operation]} {OP_LABELS[meta.operation]}
+          {isArithmeticCourse(meta) && meta.operation
+            ? `${OP_SYMBOLS[meta.operation]} ${OP_LABELS[meta.operation]}`
+            : meta.title}
         </h1>
         <p>
           Complete all <strong>10 problems</strong> in each lesson (retry misses). Badge unlocks
           when every lesson is mastered.
         </p>
-        {meta.operation === 'multiplication' && (
+        {isArithmeticCourse(meta) && meta.operation === 'multiplication' && (
           <p style={{ marginTop: '0.5rem' }}>
             <Link to="/tables" className="chip">
               Practice times tables →
@@ -70,12 +75,20 @@ export function CoursePath() {
 
           const node = !unlocked ? (
             <div className={className} aria-disabled>
-              <span>Lesson {i + 1}</span>
+              <span>
+                {getTrackLessons(meta.id)?.[i]
+                  ? `${i + 1}. ${getTrackLessons(meta.id)![i].title}`
+                  : `Lesson ${i + 1}`}
+              </span>
               <span>🔒</span>
             </div>
           ) : (
             <Link to={`/lesson/${courseId}/${i}`} className={className}>
-              <span>Lesson {i + 1}</span>
+              <span>
+                {getTrackLessons(meta.id)?.[i]
+                  ? `${i + 1}. ${getTrackLessons(meta.id)![i].title}`
+                  : `Lesson ${i + 1}`}
+              </span>
               <span>{mastered ? '✅' : '▶'}</span>
             </Link>
           );

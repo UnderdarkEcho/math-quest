@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext';
-import { THEME_IMAGES } from '../data/assets';
+import { themeImage } from '../data/assets';
 import { getCourse, gradeLabel } from '../data/catalog';
 import { getThemePack } from '../data/themes';
 import {
@@ -15,7 +15,7 @@ import {
   ensureTableProgress,
   TOTAL_FACTS,
 } from '../lib/tablesProgress';
-import { OP_LABELS, OP_SYMBOLS } from '../types';
+import { AGE_BANDS, OP_LABELS, OP_SYMBOLS } from '../types';
 
 export function Home() {
   const { profile } = useProfile();
@@ -36,7 +36,7 @@ export function Home() {
       <div className="row">
         <div className="row" style={{ gap: '0.75rem' }}>
           <div className="hero-mascot" style={{ width: 64, height: 64, margin: 0, borderRadius: 16 }}>
-            <img src={THEME_IMAGES[profile.themeId]} alt="" />
+            <img src={themeImage(profile.themeId, profile.ageBand ?? 'upper')} alt="" />
           </div>
           <div>
             <h1>Hi, {profile.name}!</h1>
@@ -47,7 +47,9 @@ export function Home() {
       </div>
 
       <div className="chip-row">
-        <span className="chip">Theme: {theme.label}</span>
+        <span className="chip">
+          Theme: {theme.label} · {AGE_BANDS.find((b) => b.id === (profile.ageBand ?? 'upper'))?.label}
+        </span>
         <span className="chip">{completedCount} courses done</span>
         <span className="chip">{profile.badges.length} badges</span>
       </div>
@@ -96,7 +98,9 @@ export function Home() {
                 <Link key={c.courseId} to={`/course/${c.courseId}`} className="card" style={{ marginTop: 0 }}>
                   <div className="row">
                     <strong>
-                      {OP_SYMBOLS[c.operation]} {gradeLabel(c.grade)} {OP_LABELS[c.operation]}
+                      {meta.track !== 'arithmetic'
+                        ? meta.title
+                        : `${OP_SYMBOLS[c.operation!]} ${gradeLabel(c.grade!)} ${OP_LABELS[c.operation!]}`}
                     </strong>
                     <span className="muted">
                       {done}/{total} lessons

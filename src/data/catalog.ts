@@ -1,4 +1,4 @@
-import type { CourseMeta, Grade, Operation } from '../types';
+import type { CourseMeta, Grade, Operation, TrackId } from '../types';
 import { GRADES, LESSONS_PER_COURSE, OPERATIONS, OP_LABELS } from '../types';
 
 export function courseId(grade: Grade, operation: Operation): string {
@@ -15,6 +15,7 @@ export function buildCourses(): CourseMeta[] {
     for (const operation of OPERATIONS) {
       courses.push({
         id: courseId(grade, operation),
+        track: 'arithmetic',
         grade,
         operation,
         title: `Grade ${grade} ${OP_LABELS[operation]}`,
@@ -26,10 +27,35 @@ export function buildCourses(): CourseMeta[] {
   return courses;
 }
 
-export const COURSES: CourseMeta[] = buildCourses();
+export const TRACK_COURSES: CourseMeta[] = [
+  {
+    id: 'prealgebra',
+    track: 'prealgebra',
+    title: 'Pre-algebra',
+    lessonCount: 10,
+    badgeId: 'badge-prealgebra',
+  },
+  {
+    id: 'algebra1',
+    track: 'algebra1',
+    title: 'Algebra I',
+    lessonCount: 8,
+    badgeId: 'badge-algebra1',
+  },
+];
+
+export const COURSES: CourseMeta[] = [...buildCourses(), ...TRACK_COURSES];
+
+export function isArithmeticCourse(meta: CourseMeta): boolean {
+  return meta.track === 'arithmetic';
+}
 
 export function getCourse(id: string): CourseMeta | undefined {
   return COURSES.find((c) => c.id === id);
+}
+
+export function coursesForTrack(track: TrackId): CourseMeta[] {
+  return COURSES.filter((c) => c.track === track);
 }
 
 export function gradeLabel(grade: Grade): string {

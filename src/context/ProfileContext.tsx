@@ -14,17 +14,20 @@ import {
   createEmptyProfile,
   masterLesson,
   startOrGetCourse,
+  startOrGetCourseById,
 } from '../lib/progress';
-import type { Grade, Operation, ThemeId, UserProfile } from '../types';
+import type { AgeBand, Grade, Operation, ThemeId, UserProfile } from '../types';
 
 interface ProfileContextValue {
   profile: UserProfile | null;
   ready: boolean;
-  createProfile: (name: string, themeId: ThemeId) => void;
+  createProfile: (name: string, themeId: ThemeId, ageBand?: AgeBand) => void;
   updateName: (name: string) => void;
   setTheme: (themeId: ThemeId) => void;
+  setAgeBand: (ageBand: AgeBand) => void;
   setShowTutorials: (on: boolean) => void;
   startCourse: (grade: Grade, operation: Operation) => string;
+  startCourseById: (courseId: string) => string;
   recordPracticeXp: (correctCount: number) => void;
   completeLessonMastery: (
     courseId: string,
@@ -55,8 +58,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const createProfile = useCallback(
-    (name: string, themeId: ThemeId) => {
-      const p = createEmptyProfile(name, themeId);
+    (name: string, themeId: ThemeId, ageBand: AgeBand = 'upper') => {
+      const p = { ...createEmptyProfile(name, themeId), ageBand };
       applyTheme(themeId);
       persist(p);
     },
@@ -80,6 +83,14 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     [profile, persist],
   );
 
+  const setAgeBand = useCallback(
+    (ageBand: AgeBand) => {
+      if (!profile) return;
+      persist({ ...profile, ageBand });
+    },
+    [profile, persist],
+  );
+
   const setShowTutorials = useCallback(
     (on: boolean) => {
       if (!profile) return;
@@ -92,6 +103,16 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     (grade: Grade, operation: Operation) => {
       if (!profile) return '';
       const { profile: next, course } = startOrGetCourse(profile, grade, operation);
+      persist(next);
+      return course.courseId;
+    },
+    [profile, persist],
+  );
+
+  const startCourseById = useCallback(
+    (courseId: string) => {
+      if (!profile) return '';
+      const { profile: next, course } = startOrGetCourseById(profile, courseId);
       persist(next);
       return course.courseId;
     },
@@ -139,8 +160,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       createProfile,
       updateName,
       setTheme,
+      setAgeBand,
       setShowTutorials,
       startCourse,
+      startCourseById,
       recordPracticeXp,
       completeLessonMastery,
       applyProfilePatch,
@@ -152,8 +175,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       createProfile,
       updateName,
       setTheme,
+      setAgeBand,
       setShowTutorials,
       startCourse,
+      startCourseById,
       recordPracticeXp,
       completeLessonMastery,
       applyProfilePatch,
