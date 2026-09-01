@@ -1,5 +1,6 @@
 import { Component, type ReactNode } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
+import { StorageBanner } from './StorageBanner';
 import { useProfile } from '../context/ProfileContext';
 
 class PageError extends Component<{ children: ReactNode }, { message: string | null }> {
@@ -22,7 +23,8 @@ class PageError extends Component<{ children: ReactNode }, { message: string | n
 }
 
 export function Layout() {
-  const { profile } = useProfile();
+  const { profile, ready, storageStatus } = useProfile();
+  const firstName = profile?.name.trim().split(/\s+/)[0];
 
   return (
     <div className="app-shell">
@@ -32,6 +34,7 @@ export function Layout() {
             ∑
           </span>
           <span>Math Quest</span>
+          {firstName && <span className="nav-child">{firstName}</span>}
         </NavLink>
         {profile && (
           <nav className="nav-links" aria-label="Main">
@@ -69,6 +72,7 @@ export function Layout() {
         )}
       </header>
       <main>
+        {ready && <StorageBanner status={storageStatus} />}
         <PageError>
           <Outlet />
         </PageError>

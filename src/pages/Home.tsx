@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
+import { InstallHint } from '../components/InstallHint';
 import { useProfile } from '../context/ProfileContext';
-import { themeImage } from '../data/assets';
+import { THEME_IMAGES } from '../data/assets';
 import { getCourse, gradeLabel } from '../data/catalog';
 import { getThemePack } from '../data/themes';
 import {
@@ -15,10 +16,10 @@ import {
   ensureTableProgress,
   TOTAL_FACTS,
 } from '../lib/tablesProgress';
-import { AGE_BANDS, OP_LABELS, OP_SYMBOLS } from '../types';
+import { OP_LABELS, OP_SYMBOLS } from '../types';
 
 export function Home() {
-  const { profile } = useProfile();
+  const { profile, roster } = useProfile();
   if (!profile) return null;
 
   const theme = getThemePack(profile.themeId);
@@ -36,7 +37,7 @@ export function Home() {
       <div className="row">
         <div className="row" style={{ gap: '0.75rem' }}>
           <div className="hero-mascot" style={{ width: 64, height: 64, margin: 0, borderRadius: 16 }}>
-            <img src={themeImage(profile.themeId, profile.ageBand ?? 'upper')} alt="" />
+            <img src={THEME_IMAGES[profile.themeId]} alt="" />
           </div>
           <div>
             <h1>Hi, {profile.name}!</h1>
@@ -46,12 +47,17 @@ export function Home() {
         <div className="stat-pill">⭐ {profile.totalXp} XP</div>
       </div>
 
+      <InstallHint />
+
       <div className="chip-row">
-        <span className="chip">
-          Theme: {theme.label} · {AGE_BANDS.find((b) => b.id === (profile.ageBand ?? 'upper'))?.label}
-        </span>
+        <span className="chip">Theme: {theme.label}</span>
         <span className="chip">{completedCount} courses done</span>
         <span className="chip">{profile.badges.length} badges</span>
+        {roster.profiles.length > 1 && (
+          <Link to="/" className="chip">
+            Switch child
+          </Link>
+        )}
       </div>
 
       <Link to="/snap" className="card" style={{ display: 'block' }}>
@@ -98,9 +104,7 @@ export function Home() {
                 <Link key={c.courseId} to={`/course/${c.courseId}`} className="card" style={{ marginTop: 0 }}>
                   <div className="row">
                     <strong>
-                      {meta.track !== 'arithmetic'
-                        ? meta.title
-                        : `${OP_SYMBOLS[c.operation!]} ${gradeLabel(c.grade!)} ${OP_LABELS[c.operation!]}`}
+                      {OP_SYMBOLS[c.operation]} {gradeLabel(c.grade)} {OP_LABELS[c.operation]}
                     </strong>
                     <span className="muted">
                       {done}/{total} lessons

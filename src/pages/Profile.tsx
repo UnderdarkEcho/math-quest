@@ -1,10 +1,11 @@
-import { Component, useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { RestoreBackup } from '../components/RestoreBackup';
 import { useProfile } from '../context/ProfileContext';
-import { BADGE_IMAGE, themeImage } from '../data/assets';
+import { BADGE_IMAGE, THEME_IMAGES } from '../data/assets';
 import { getCourse, gradeLabel } from '../data/catalog';
-import { AgeBandTabs } from '../components/AgeBandTabs';
-import { THEME_PACKS, themeVoice } from '../data/themes';
+import { THEME_PACKS } from '../data/themes';
+import { exportBackup } from '../lib/storage';
 import {
   countMasteredLanes,
   countSolidSnapFacts,
@@ -17,36 +18,15 @@ import {
   ensureTableProgress,
   TOTAL_FACTS,
 } from '../lib/tablesProgress';
-import { AGE_BANDS, OP_LABELS, OP_SYMBOLS, type AgeBand } from '../types';
-
-class ProfileError extends Component<{ children: ReactNode }, { message: string | null }> {
-  state = { message: null as string | null };
-  static getDerivedStateFromError(err: Error) {
-    return { message: err?.message || String(err) };
-  }
-  render() {
-    if (this.state.message) {
-      return (
-        <div className="card">
-          <h2>Profile hit a snag</h2>
-          <p>{this.state.message}</p>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
+import { OP_LABELS, OP_SYMBOLS } from '../types';
 
 function badgeLabel(id: string): string {
-  if (typeof id !== 'string') return String(id);
   if (id === 'first-perfect-lesson') return 'First perfect lesson';
   if (id === 'first-course-badge') return 'First course badge';
   if (id === 'times-table-starter') return 'Times table starter';
   if (id === 'times-table-champ') return 'Times table champion';
   if (id === 'snap-starter') return 'Snap starter';
   if (id === 'snap-champ') return 'Snap champion';
-  if (id === 'badge-prealgebra') return 'Pre-algebra';
-  if (id === 'badge-algebra1') return 'Algebra I';
   const m = id.match(/^badge-g(\d+)-(\w+)$/);
   if (m) {
     const grade = Number(m[1]) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
@@ -57,26 +37,25 @@ function badgeLabel(id: string): string {
 }
 
 export function Profile() {
-  return (
-    <ProfileError>
-      <ProfileBody />
-    </ProfileError>
-  );
-}
-
-function ProfileBody() {
-  const { profile, setTheme, setAgeBand, setShowTutorials, updateName, resetAll } = useProfile();
+  const {
+    profile,
+    roster,
+    setTheme,
+    setShowTutorials,
+    updateName,
+    resetAll,
+    switchProfile,
+    deleteProfile,
+  } = useProfile();
   const navigate = useNavigate();
   const [nameEdit, setNameEdit] = useState(profile?.name ?? '');
+  const [copied, setCopied] = useState(false);
+  const [showRestore, setShowRestore] = useState(false);
 
   if (!profile) return null;
 
-  const ageBand: AgeBand = AGE_BANDS.some((b) => b.id === profile.ageBand)
-    ? profile.ageBand
-    : 'upper';
-
-  const inProgress = (profile.courses ?? []).filter((c) => c.status === 'in_progress');
-  const completed = (profile.courses ?? []).filter((c) => c.status === 'completed');
+  const inProgress = profile.courses.filter((c) => c.status === 'in_progress');
+  const completed = profile.courses.filter((c) => c.status === 'completed');
   const tp = ensureTableProgress(profile);
   const tableSolid = countSolidFacts(tp);
   const tablesMastered = countMasteredTables(tp);
@@ -89,10 +68,55 @@ function ProfileBody() {
   };
 
   const handleReset = () => {
-    if (window.confirm('Clear all progress on this device? This cannot be undone.')) {
-      resetAll();
-      navigate('/');
+    if (
+      window.confirm(
+        'Clear every child on this device? This cannot be undone. Save a backup first if you want this progress later.',
+      )
+    ) {
+      void resetAll().then(() => navigate('/'));
     }
+  };
+
+  const saveBackupFile = () => {
+    const file = exportBackup(roster);
+    const blob = new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `math-quest-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const copyBackup = async () => {
+    const text = JSON.stringify(exportBackup(roster), null, 2);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+    } catch {
+      const area = document.getElementById('backup-copy-fallback') as HTMLTextAreaElement | null;
+      if (area) {
+        area.value = text;
+        area.hidden = false;
+        area.select();
+      }
+    }
+  };
+
+  const others = roster.profiles.filter((p) => p.id !== profile.id);
+
+  const handleDelete = () => {
+    if (
+      !window.confirm(
+        `Remove ${profile.name} from this device? Save a backup first if you want this progress later.`,
+      )
+    ) {
+      return;
+    }
+    void deleteProfile(profile.id).then(() => {
+      if (roster.profiles.length <= 1) navigate('/');
+      else navigate('/home');
+    });
   };
 
   return (
@@ -139,6 +163,33 @@ function ProfileBody() {
           </label>
         </div>
 
+        <div>
+          <div className="label">Theme</div>
+          <div className="grid-themes">
+            {THEME_PACKS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={`theme-card${profile.themeId === t.id ? ' selected' : ''}`}
+                onClick={() => setTheme(t.id)}
+              >
+                <img
+                  src={THEME_IMAGES[t.id]}
+                  alt=""
+                  style={{
+                    width: '100%',
+                    aspectRatio: '1',
+                    objectFit: 'cover',
+                    borderRadius: 12,
+                    marginBottom: 8,
+                  }}
+                />
+                <h3>{t.label}</h3>
+                <p style={{ margin: 0, fontSize: '0.85rem' }}>{t.tagline}</p>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="card">
@@ -206,11 +257,7 @@ function ProfileBody() {
               return (
                 <Link key={c.courseId} to={`/course/${c.courseId}`} className="row">
                   <strong>
-                    {(() => {
-                      const m = getCourse(c.courseId);
-                      if (m && m.track !== 'arithmetic') return m.title;
-                      return `${OP_SYMBOLS[c.operation!]} ${gradeLabel(c.grade!)} ${OP_LABELS[c.operation!]}`;
-                    })()}
+                    {OP_SYMBOLS[c.operation]} {gradeLabel(c.grade)} {OP_LABELS[c.operation]}
                   </strong>
                   <span className="muted">
                     {c.completedLessons.length}/{meta?.lessonCount ?? 8}
@@ -228,58 +275,80 @@ function ProfileBody() {
           <p className="empty">Finish every lesson’s 10 problems to complete a course.</p>
         ) : (
           <div className="stack">
-            {completed.map((c) => {
-              const m = getCourse(c.courseId);
-              const title =
-                m && m.track !== 'arithmetic'
-                  ? m.title
-                  : `${OP_SYMBOLS[c.operation!]} ${gradeLabel(c.grade!)} ${OP_LABELS[c.operation!]}`;
-              return (
-                <Link key={c.courseId} to={`/course/${c.courseId}`} className="row">
-                  <strong>{title}</strong>
-                  <span>✅</span>
-                </Link>
-              );
-            })}
+            {completed.map((c) => (
+              <Link key={c.courseId} to={`/course/${c.courseId}`} className="row">
+                <strong>
+                  {OP_SYMBOLS[c.operation]} {gradeLabel(c.grade)} {OP_LABELS[c.operation]}
+                </strong>
+                <span>✅</span>
+              </Link>
+            ))}
           </div>
         )}
       </div>
 
       <div className="card stack">
-        <h2>Look</h2>
-        <AgeBandTabs value={ageBand} onChange={(b) => setAgeBand(b)} />
-        <div>
-          <div className="label">Theme</div>
-          <div className="grid-themes">
-            {THEME_PACKS.map((t) => (
+        <h2>This device</h2>
+        <p className="muted" style={{ marginTop: 0 }}>
+          Several children can share this iPad. Each keeps their own stars.
+        </p>
+        <Link to="/" className="btn btn-secondary btn-block">
+          Who’s playing?
+        </Link>
+      </div>
+
+      {others.length > 0 && (
+        <div className="card stack">
+          <h2>Other children on this device</h2>
+          <div className="child-list">
+            {others.map((p) => (
               <button
-                key={t.id}
+                key={p.id}
                 type="button"
-                className={`theme-card${profile.themeId === t.id ? ' selected' : ''}`}
-                onClick={() => setTheme(t.id)}
+                className="child-row"
+                onClick={() => {
+                  switchProfile(p.id);
+                  navigate('/home');
+                }}
               >
-                <img
-                  src={themeImage(t.id, ageBand)}
-                  alt=""
-                  loading="lazy"
-                  style={{
-                    width: '100%',
-                    aspectRatio: '1',
-                    objectFit: 'cover',
-                    borderRadius: 12,
-                    marginBottom: 8,
-                  }}
-                />
-                <h3>{t.label}</h3>
-                <p style={{ margin: 0, fontSize: '0.85rem' }}>
-                  {themeVoice(t, ageBand)?.tagline ?? t.tagline}
-                </p>
+                <img src={THEME_IMAGES[p.themeId]} alt="" />
+                <span>
+                  <strong>{p.name}</strong>
+                  <span className="muted">⭐ {p.totalXp} XP</span>
+                </span>
               </button>
             ))}
           </div>
         </div>
+      )}
+
+      <div className="card stack">
+        <h2>Keep a spare copy</h2>
+        <p>
+          Math Quest does not use accounts. Progress lives on this iPad or phone. Save a backup
+          before you clear Safari, sell the device, or switch browsers.
+        </p>
+        <button type="button" className="btn btn-primary btn-block" onClick={saveBackupFile}>
+          Save backup
+        </button>
+        <button type="button" className="btn btn-secondary btn-block" onClick={() => void copyBackup()}>
+          Copy backup code
+        </button>
+        {copied && <div className="feedback ok">Copied. Keep this file on a parent phone.</div>}
+        <textarea id="backup-copy-fallback" className="input" rows={3} hidden readOnly />
+        <button
+          type="button"
+          className="btn btn-secondary btn-block"
+          onClick={() => setShowRestore((v) => !v)}
+        >
+          Restore backup
+        </button>
+        {showRestore && <RestoreBackup />}
       </div>
 
+      <button type="button" className="btn btn-secondary btn-block" onClick={handleDelete}>
+        Remove {profile.name} from this device
+      </button>
       <button type="button" className="btn btn-secondary btn-block" onClick={handleReset}>
         Clear all progress
       </button>

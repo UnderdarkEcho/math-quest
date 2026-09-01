@@ -1,7 +1,7 @@
 import { arithmeticSymbols } from '../data/symbols';
 import { getSkillBand } from '../data/skills';
-import { getThemePack, themeVoice } from '../data/themes';
-import type { AgeBand, Grade, LessonTeach, Operation, TeachStep, ThemeId } from '../types';
+import { getThemePack } from '../data/themes';
+import type { Grade, LessonTeach, Operation, TeachStep, ThemeId } from '../types';
 import { generateQuestion } from './questionGen';
 
 function fillStory(template: string, a: number, b: number): string {
@@ -17,30 +17,28 @@ export function buildLessonTeach(
   grade: Grade,
   lessonIndex: number,
   themeId: ThemeId,
-  ageBand: AgeBand = 'upper',
 ): LessonTeach {
   const pack = getThemePack(themeId);
-  const voice = themeVoice(pack, ageBand);
   const skill = getSkillBand(op, lessonIndex);
-  const hookBody = pick(voice.hooks[op], lessonIndex);
-  const storyTpl = pick(voice.exampleStories[op], lessonIndex);
+  const hookBody = pick(pack.hooks[op], lessonIndex);
+  const storyTpl = pick(pack.exampleStories[op], lessonIndex);
 
   const example = generateQuestion(op, grade, Math.max(0, lessonIndex - 1));
-  const story = fillStory(storyTpl, Math.abs(example.a), Math.abs(example.b));
-
+  const story = fillStory(storyTpl, example.a, example.b);
   const primer = arithmeticSymbols(op);
+
   const steps: TeachStep[] = [
     {
       kind: 'symbols',
       title: 'What the marks mean',
       intro: primer.intro,
       items: primer.items,
-      typeHint: 'Type only the number for the answer. You can use a regular minus key for −.',
+      typeHint: 'Type only the number for the answer.',
     },
     {
       kind: 'hook',
       title: skill.title,
-      body: `${hookBody}\n\n${skill.rule}\n\n${skill.steps.map((s, i) => `${i + 1}. ${s}`).join('\n\n')}`,
+      body: `${hookBody} ${skill.rule}`,
     },
     {
       kind: 'worked_example',
@@ -59,7 +57,7 @@ export function buildLessonTeach(
     const q = generateQuestion(op, grade, Math.max(0, lessonIndex - (i === 0 ? 1 : 0)));
     const themedPrompt =
       i === 0
-        ? fillStory(pick(voice.exampleStories[op], lessonIndex + i + 1), Math.abs(q.a), Math.abs(q.b))
+        ? fillStory(pick(pack.exampleStories[op], lessonIndex + i + 1), q.a, q.b)
         : 'Solve this one:';
     steps.push({
       kind: 'guided',

@@ -6,11 +6,6 @@ function randInt(min: number, max: number, rng: () => number): number {
   return Math.floor(rng() * (max - min + 1)) + min;
 }
 
-function maybeNegate(n: number, allow: boolean, rng: () => number): number {
-  if (!allow || n === 0) return n;
-  return rng() < 0.35 ? -n : n;
-}
-
 function expression(op: Operation, a: number, b: number): string {
   return `${a} ${OP_SYMBOLS[op]} ${b}`;
 }
@@ -30,8 +25,8 @@ export function generateQuestion(
   const d = getDifficulty(op, grade, lessonIndex);
 
   if (op === 'addition') {
-    const a = maybeNegate(randInt(d.min, d.max, rng), d.allowNegatives, rng);
-    const b = maybeNegate(randInt(d.min, d.max, rng), d.allowNegatives, rng);
+    const a = randInt(d.min, d.max, rng);
+    const b = randInt(d.min, d.max, rng);
     return {
       id: nextId(),
       op,
@@ -45,17 +40,8 @@ export function generateQuestion(
   if (op === 'subtraction') {
     let a = randInt(d.min, d.max, rng);
     let b = randInt(d.min, d.max, rng);
-    if (!d.allowNegatives && b > a) {
+    if (b > a) {
       [a, b] = [b, a];
-    }
-    a = maybeNegate(a, d.allowNegatives, rng);
-    b = maybeNegate(b, d.allowNegatives, rng);
-    if (!d.allowNegatives && a - b < 0) {
-      // ensure non-negative result
-      const hi = Math.max(Math.abs(a), Math.abs(b));
-      const lo = Math.min(Math.abs(a), Math.abs(b));
-      a = hi;
-      b = lo;
     }
     return {
       id: nextId(),
@@ -79,8 +65,6 @@ export function generateQuestion(
     } else if (grade <= 5 && a > 12 && b > 12) {
       b = randInt(2, 12, rng);
     }
-    a = maybeNegate(a, d.allowNegatives, rng);
-    b = maybeNegate(b, d.allowNegatives, rng);
     return {
       id: nextId(),
       op,
@@ -93,20 +77,10 @@ export function generateQuestion(
 
   // division — exact integer quotients
   const maxB = d.divMaxB ?? 12;
-  let b = randInt(Math.max(2, d.min), maxB, rng);
+  const b = randInt(Math.max(2, d.min), maxB, rng);
   let quotient = randInt(d.min, Math.max(d.min, Math.floor(d.max / b)), rng);
   if (quotient < 1) quotient = 1;
-  let a = b * quotient;
-  // occasionally apply negatives to both or neither for clean integer answers
-  if (d.allowNegatives && rng() < 0.3) {
-    if (rng() < 0.5) {
-      a = -a;
-      b = -b;
-    } else {
-      a = -a;
-      quotient = -quotient;
-    }
-  }
+  const a = b * quotient;
   return {
     id: nextId(),
     op,

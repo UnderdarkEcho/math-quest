@@ -8,3 +8,10 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 );
+
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  const swUrl = `${import.meta.env.BASE_URL}sw.js`;
+  window.addEventListener('load', () => {
+    void navigator.serviceWorker.register(swUrl).catch(() => undefined);
+  });
+}

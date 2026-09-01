@@ -4,7 +4,9 @@ A Duolingo/Brilliant-style web app for grades **1–12** that teaches **addition
 
 **Play:** https://underdarkecho.github.io/math-quest/
 
-Progress is stored in the browser on that device (not in the cloud), so use the same phone browser and skip private/incognito mode.
+Free for homeschool families. No account. Progress stays on the device.
+
+**Use the Home Screen icon.** Add Math Quest to the iPhone/iPad Home Screen (Share → Add to Home Screen) or Android home screen, then always open it from that icon. A regular Safari tab can forget site data after about a week. Keep a **Save backup** file on a parent phone before clearing Safari or moving to a new device. See [docs/HOMESCHOOL.md](docs/HOMESCHOOL.md).
 
 ## Features
 
@@ -13,10 +15,10 @@ Progress is stored in the browser on that device (not in the cloud), so use the 
 - **Times Table Trainer** — explore a 12×12 grid and drill base facts (1×1–12×12)
 - **Snap Facts** — tap-to-answer mini-game for single-digit + and − (bonds to 10, doubles, make-10)
 - **Interactive teach** — themed hook, worked example with step reveal, guided practice with feedback
-- **Mastery quiz** — 10 simple equations; need **10/10** (any miss fails the run)
-- **Course badges** — awarded only when every lesson is mastered at 100%
-- **Genre themes** — Classic, Block World, Quest & Dice, Greek Myth, Small Business (global preference)
-- **Local profile** — name, XP, badges, in-progress and completed courses in `localStorage`
+- **Mastery quiz** — 10 simple equations; miss one and you retry that problem; finish all 10
+- **Course badges** — awarded only when every lesson is mastered
+- **Genre themes** — Classic, Block World, Quest & Dice, Greek Myth, Small Business
+- **Local family profiles** — several children on one iPad, IndexedDB + backup file, no cloud
 
 ## Run locally
 
@@ -34,13 +36,13 @@ npm run preview # preview production build
 
 ## How to use
 
-1. Enter your name and pick a theme.
+1. Enter a name and pick a theme (or pick an existing child on **Who’s playing?**).
 2. Start a course (grade + operation).
 3. Complete the interactive teach, then the 10-question quiz.
-4. Retry until you get **10/10** to unlock the next lesson.
+4. Retry misses until you finish all 10 to unlock the next lesson.
 5. Master all 8 lessons to earn the course badge.
-6. View progress on **Profile** (change theme anytime).
-7. Open **Tables** to explore the chart and drill times tables (retry misses; progress saves).
+6. Open **Profile** to change theme, switch children, save a backup, or restore one.
+7. Open **Tables** to explore the chart and drill times tables.
 8. Open **Snap** to tap single-digit + and − facts (stars from speed; slow never fails).
 
 ## Extending
@@ -66,7 +68,7 @@ npm run preview # preview production build
 - Vite + React + TypeScript
 - React Router
 - CSS variables for theme skins
-- localStorage only (no backend)
+- IndexedDB roster with localStorage fallback (no backend)
 
 ## Notes
 

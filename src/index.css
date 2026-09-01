@@ -1600,3 +1600,72 @@ span.tt-cell {
   font-weight: 800;
   color: var(--color-muted);
 }
+
+.nav-child {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-muted);
+  margin-left: 0.15rem;
+}
+
+.storage-banner {
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.85rem;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  line-height: 1.4;
+  border: 1px solid var(--color-border);
+}
+
+.storage-banner.unavailable {
+  background: color-mix(in srgb, var(--color-danger) 14%, white);
+  border-color: color-mix(in srgb, var(--color-danger) 40%, var(--color-border));
+}
+
+.storage-banner.ephemeral {
+  background: color-mix(in srgb, var(--color-accent) 22%, white);
+}
+
+.child-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.child-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--color-border);
+  background: var(--color-card);
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.child-row.selected,
+.child-row:hover {
+  border-color: var(--color-primary);
+}
+
+.child-row img {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.child-row span {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.install-hint p {
+  color: var(--color-text);
+  font-weight: 700;
+}

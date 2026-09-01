@@ -4,12 +4,11 @@ import { ColumnEquation } from '../components/ColumnEquation';
 import { TeachFlow } from '../components/teach/TeachFlow';
 import { useProfile } from '../context/ProfileContext';
 import { getCourse } from '../data/catalog';
-import { getTrackLessons } from '../data/tracks';
 import { checkAnswer, computeAnswer } from '../lib/answers';
-import { buildCourseTeach, generateCourseQuiz } from '../lib/courseQuiz';
+import { buildLessonTeach } from '../lib/lessonContent';
 import { isLessonUnlocked } from '../lib/progress';
-import { checkPromptAnswer } from '../lib/promptAnswers';
-import { QUIZ_LENGTH, isPromptQuestion, type QuizItem } from '../types';
+import { generateQuiz } from '../lib/questionGen';
+import { QUIZ_LENGTH, type Question } from '../types';
 
 type Phase = 'teach' | 'quiz' | 'results';
 
@@ -24,18 +23,13 @@ export function Lesson() {
 
   const teach = useMemo(() => {
     if (!meta || !profile || Number.isNaN(lessonIndex)) return null;
-    return buildCourseTeach(
-      meta,
-      lessonIndex,
-      profile.themeId,
-      profile.ageBand ?? 'upper',
-    );
+    return buildLessonTeach(meta.operation, meta.grade, lessonIndex, profile.themeId);
   }, [meta, profile, lessonIndex]);
 
   const skipTeach = profile?.showTutorials === false && meta && !Number.isNaN(lessonIndex);
   const [phase, setPhase] = useState<Phase>(skipTeach ? 'quiz' : 'teach');
-  const [questions, setQuestions] = useState<QuizItem[]>(() =>
-    skipTeach && meta ? generateCourseQuiz(meta, lessonIndex) : [],
+  const [questions, setQuestions] = useState<Question[]>(() =>
+    skipTeach ? generateQuiz(meta.operation, meta.grade, lessonIndex, QUIZ_LENGTH) : [],
   );
   const [qIndex, setQIndex] = useState(0);
   const [value, setValue] = useState('');
@@ -56,7 +50,7 @@ export function Lesson() {
   }
 
   const startQuiz = () => {
-    setQuestions(generateCourseQuiz(meta, lessonIndex));
+    setQuestions(generateQuiz(meta.operation, meta.grade, lessonIndex, QUIZ_LENGTH));
     setQIndex(0);
     setValue('');
     setFeedback('idle');
@@ -82,17 +76,10 @@ export function Lesson() {
   const submitAnswer = (e: FormEvent) => {
     e.preventDefault();
     if (!current || feedback !== 'idle') return;
-    let ok = false;
-    if (isPromptQuestion(current)) {
-      if (!value.trim()) return;
-      ok = checkPromptAnswer(value, current.expected);
-    } else {
-      const result = checkAnswer(value, current.op, current.a, current.b);
-      if (result.user === null) return;
-      ok = result.ok;
-    }
+    const result = checkAnswer(value, current.op, current.a, current.b);
+    if (result.user === null) return;
 
-    if (ok) {
+    if (result.ok) {
       setFeedback('ok');
       const nextSolved = solvedCount + 1;
       setSolvedCount(nextSolved);
@@ -123,9 +110,7 @@ export function Lesson() {
           <p className="muted" style={{ margin: 0 }}>
             {meta.title}
           </p>
-          <h1 style={{ fontSize: '1.4rem' }}>
-            {getTrackLessons(meta.id)?.[lessonIndex]?.title ?? `Lesson ${lessonIndex + 1}`}
-          </h1>
+          <h1 style={{ fontSize: '1.4rem' }}>Lesson {lessonIndex + 1}</h1>
         </div>
         <Link to={`/course/${courseId}`} className="btn btn-secondary" style={{ padding: '0.5rem 0.9rem' }}>
           Exit
@@ -133,23 +118,6 @@ export function Lesson() {
       </div>
 
       {phase === 'teach' && teach && <TeachFlow teach={teach} onComplete={startQuiz} />}
-      {phase === 'teach' && !teach && (
-        <div className="card">
-          <p>Could not build this tutorial. You can still take the quiz.</p>
-          <button type="button" className="btn btn-primary btn-block" onClick={startQuiz}>
-            Start quiz
-          </button>
-        </div>
-      )}
-
-      {phase === 'quiz' && !current && (
-        <div className="card">
-          <p>Could not build a quiz for this lesson.</p>
-          <Link to={`/course/${courseId}`} className="btn btn-primary">
-            Back
-          </Link>
-        </div>
-      )}
 
       {phase === 'quiz' && current && (
         <div className="card">
@@ -169,17 +137,13 @@ export function Lesson() {
           </div>
 
           <div aria-live="polite">
-            {isPromptQuestion(current) ? (
-              <div className="expression">{current.prompt}</div>
-            ) : (
-              <ColumnEquation
-                a={current.a}
-                b={current.b}
-                op={current.op}
-                answer={feedback === 'ok' ? computeAnswer(current.op, current.a, current.b) : null}
-                showBlank={feedback !== 'ok'}
-              />
-            )}
+            <ColumnEquation
+              a={current.a}
+              b={current.b}
+              op={current.op}
+              answer={feedback === 'ok' ? computeAnswer(current.op, current.a, current.b) : null}
+              showBlank={feedback !== 'ok'}
+            />
           </div>
 
           {feedback === 'ok' && <div className="feedback ok">Correct!</div>}

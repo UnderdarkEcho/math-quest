@@ -29,10 +29,10 @@ const ADDITION: SkillBand[] = [
     hint: 'Right to left keeps place values correct.',
   },
   {
-    title: 'Negatives and signed sums',
-    rule: 'Same signs add magnitudes; different signs subtract and keep the larger sign.',
-    steps: ['Check the signs', 'Combine magnitudes correctly', 'Apply the final sign'],
-    hint: 'Think of a number line when signs differ.',
+    title: 'Checking a big total',
+    rule: 'After adding, estimate to see if the total makes sense.',
+    steps: ['Add place by place', 'Round each number and add those', 'See if your exact total is close'],
+    hint: 'If 387 + 412 is near 400 + 400 = 800, your answer should be near 800.',
   },
 ];
 
@@ -56,10 +56,10 @@ const SUBTRACTION: SkillBand[] = [
     hint: 'Keep digits lined up by place.',
   },
   {
-    title: 'Signed differences',
-    rule: 'a − b is the same as a + (−b).',
-    steps: ['Rewrite if helpful', 'Combine carefully', 'Check the sign of the result'],
-    hint: 'Subtracting a negative is like adding.',
+    title: 'Checking a difference',
+    rule: 'Add the answer back to the amount you took away. You should get the starting number.',
+    steps: ['Subtract place by place', 'Write the difference', 'Check: difference + taken away = start'],
+    hint: 'Subtraction undoes addition.',
   },
 ];
 
@@ -83,10 +83,10 @@ const MULTIPLICATION: SkillBand[] = [
     hint: 'Place value tells you where each partial product starts.',
   },
   {
-    title: 'Signed products',
-    rule: 'Same signs → positive product; different signs → negative product.',
-    steps: ['Multiply the magnitudes', 'Apply the sign rule', 'Write the product'],
-    hint: 'Negative times negative is positive.',
+    title: 'Checking a product',
+    rule: 'A product should match repeated addition of equal groups.',
+    steps: ['Multiply the factors', 'Estimate with rounded factors', 'See if the product is in the right ballpark'],
+    hint: '20 × 19 is a little less than 20 × 20 = 400.',
   },
 ];
 
@@ -110,10 +110,10 @@ const DIVISION: SkillBand[] = [
     hint: 'Estimation keeps you close to the right quotient.',
   },
   {
-    title: 'Signed quotients',
-    rule: 'Same signs → positive quotient; different signs → negative quotient.',
-    steps: ['Divide magnitudes', 'Apply the sign rule', 'Verify with multiplication'],
-    hint: 'Sign rules match multiplication.',
+    title: 'Checking a quotient',
+    rule: 'Multiply the quotient by the divisor. You should get the dividend.',
+    steps: ['Divide', 'Write the quotient', 'Check: quotient × divisor = dividend'],
+    hint: 'Division undoes multiplication.',
   },
 ];
 

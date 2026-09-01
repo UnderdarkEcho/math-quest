@@ -1,19 +1,13 @@
-import type { AgeBand, ThemeId } from '../types';
+import type { ThemeId } from '../types';
 
-export function themeImage(themeId: ThemeId, ageBand: AgeBand = 'upper'): string {
-  const base = (import.meta.env && import.meta.env.BASE_URL) || '/';
-  const band = ageBand || 'upper';
-  const id = themeId || 'default';
-  return `${base}themes/${band}/${id}.jpg?v=2`;
-}
+const base = import.meta.env.BASE_URL;
 
-/** Upper-band images; prefer themeImage(id, ageBand) in UI. */
 export const THEME_IMAGES: Record<ThemeId, string> = {
-  default: themeImage('default', 'upper'),
-  minecraft: themeImage('minecraft', 'upper'),
-  dnd: themeImage('dnd', 'upper'),
-  greek: themeImage('greek', 'upper'),
-  'small-business': themeImage('small-business', 'upper'),
+  default: `${base}themes/default.jpg`,
+  minecraft: `${base}themes/minecraft.jpg`,
+  dnd: `${base}themes/dnd.jpg`,
+  greek: `${base}themes/greek.jpg`,
+  'small-business': `${base}themes/small-business.jpg`,
 };
 
-export const BADGE_IMAGE = `${(import.meta.env && import.meta.env.BASE_URL) || '/'}badges/medal.jpg`;
+export const BADGE_IMAGE = `${base}badges/medal.jpg`;
