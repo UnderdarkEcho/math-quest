@@ -19,7 +19,7 @@ import {
 import { OP_LABELS, OP_SYMBOLS } from '../types';
 
 export function Home() {
-  const { profile, roster } = useProfile();
+  const { profile } = useProfile();
   if (!profile) return null;
 
   const theme = getThemePack(profile.themeId);
@@ -53,11 +53,9 @@ export function Home() {
         <span className="chip">Theme: {theme.label}</span>
         <span className="chip">{completedCount} courses done</span>
         <span className="chip">{profile.badges.length} badges</span>
-        {roster.profiles.length > 1 && (
-          <Link to="/" className="chip">
-            Switch child
-          </Link>
-        )}
+        <Link to="/" className="chip">
+          Who’s playing?
+        </Link>
       </div>
 
       <Link to="/snap" className="card" style={{ display: 'block' }}>

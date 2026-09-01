@@ -50,6 +50,7 @@ export function Profile() {
   const navigate = useNavigate();
   const [nameEdit, setNameEdit] = useState(profile?.name ?? '');
   const [copied, setCopied] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [showRestore, setShowRestore] = useState(false);
 
   if (!profile) return null;
@@ -77,27 +78,47 @@ export function Profile() {
     }
   };
 
-  const saveBackupFile = () => {
-    const file = exportBackup(roster);
-    const blob = new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' });
+  const backupJson = () => JSON.stringify(exportBackup(roster), null, 2);
+  const backupFilename = () =>
+    `math-quest-backup-${new Date().toISOString().slice(0, 10)}.json`;
+
+  const saveBackupFile = async () => {
+    const json = backupJson();
+    const filename = backupFilename();
+    const blob = new Blob([json], { type: 'application/json' });
+    try {
+      const shareFile = new File([blob], filename, { type: 'application/json' });
+      if (navigator.share && navigator.canShare?.({ files: [shareFile] })) {
+        await navigator.share({ files: [shareFile], title: 'Math Quest backup' });
+        setSaved(true);
+        setCopied(false);
+        return;
+      }
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return;
+    }
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `math-quest-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+    setSaved(true);
+    setCopied(false);
   };
 
   const copyBackup = async () => {
-    const text = JSON.stringify(exportBackup(roster), null, 2);
+    const text = backupJson();
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
+      setSaved(false);
     } catch {
       const area = document.getElementById('backup-copy-fallback') as HTMLTextAreaElement | null;
       if (area) {
         area.value = text;
         area.hidden = false;
+        area.focus();
         area.select();
       }
     }
@@ -190,6 +211,62 @@ export function Profile() {
             ))}
           </div>
         </div>
+      </div>
+
+      <div className="card stack">
+        <h2>Keep a spare copy</h2>
+        <p>
+          Math Quest does not use accounts. Progress lives on this iPad or phone. Save a backup
+          before you clear Safari, sell the device, or switch browsers.
+        </p>
+        <button type="button" className="btn btn-primary btn-block" onClick={() => void saveBackupFile()}>
+          Save backup
+        </button>
+        <button type="button" className="btn btn-secondary btn-block" onClick={() => void copyBackup()}>
+          Copy backup code
+        </button>
+        {saved && <div className="feedback ok">Saved. Keep this file on a parent phone.</div>}
+        {copied && <div className="feedback ok">Copied. Keep this file on a parent phone.</div>}
+        <textarea id="backup-copy-fallback" className="input" rows={3} hidden readOnly />
+        <button
+          type="button"
+          className="btn btn-secondary btn-block"
+          onClick={() => setShowRestore((v) => !v)}
+        >
+          Restore backup
+        </button>
+        {showRestore && <RestoreBackup />}
+      </div>
+
+      <div className="card stack">
+        <h2>This device</h2>
+        <p className="muted" style={{ marginTop: 0 }}>
+          Several children can share this iPad. Each keeps their own stars.
+        </p>
+        <Link to="/" className="btn btn-secondary btn-block">
+          Who’s playing?
+        </Link>
+        {others.length > 0 && (
+          <div className="child-list">
+            {others.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                className="child-row"
+                onClick={() => {
+                  switchProfile(p.id);
+                  navigate('/home');
+                }}
+              >
+                <img src={THEME_IMAGES[p.themeId]} alt="" />
+                <span>
+                  <strong>{p.name}</strong>
+                  <span className="muted">⭐ {p.totalXp} XP</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="card">
@@ -285,65 +362,6 @@ export function Profile() {
             ))}
           </div>
         )}
-      </div>
-
-      <div className="card stack">
-        <h2>This device</h2>
-        <p className="muted" style={{ marginTop: 0 }}>
-          Several children can share this iPad. Each keeps their own stars.
-        </p>
-        <Link to="/" className="btn btn-secondary btn-block">
-          Who’s playing?
-        </Link>
-      </div>
-
-      {others.length > 0 && (
-        <div className="card stack">
-          <h2>Other children on this device</h2>
-          <div className="child-list">
-            {others.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                className="child-row"
-                onClick={() => {
-                  switchProfile(p.id);
-                  navigate('/home');
-                }}
-              >
-                <img src={THEME_IMAGES[p.themeId]} alt="" />
-                <span>
-                  <strong>{p.name}</strong>
-                  <span className="muted">⭐ {p.totalXp} XP</span>
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="card stack">
-        <h2>Keep a spare copy</h2>
-        <p>
-          Math Quest does not use accounts. Progress lives on this iPad or phone. Save a backup
-          before you clear Safari, sell the device, or switch browsers.
-        </p>
-        <button type="button" className="btn btn-primary btn-block" onClick={saveBackupFile}>
-          Save backup
-        </button>
-        <button type="button" className="btn btn-secondary btn-block" onClick={() => void copyBackup()}>
-          Copy backup code
-        </button>
-        {copied && <div className="feedback ok">Copied. Keep this file on a parent phone.</div>}
-        <textarea id="backup-copy-fallback" className="input" rows={3} hidden readOnly />
-        <button
-          type="button"
-          className="btn btn-secondary btn-block"
-          onClick={() => setShowRestore((v) => !v)}
-        >
-          Restore backup
-        </button>
-        {showRestore && <RestoreBackup />}
       </div>
 
       <button type="button" className="btn btn-secondary btn-block" onClick={handleDelete}>

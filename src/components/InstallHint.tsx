@@ -21,6 +21,14 @@ function dismissedThisWeek(): boolean {
   }
 }
 
+function deviceKind(): 'ios' | 'android' | 'other' {
+  const ua = navigator.userAgent;
+  if (/iPhone|iPad|iPod/i.test(ua)) return 'ios';
+  if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) return 'ios';
+  if (/Android/i.test(ua)) return 'android';
+  return 'other';
+}
+
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
 };
@@ -28,6 +36,7 @@ type BeforeInstallPromptEvent = Event & {
 export function InstallHint() {
   const { roster } = useProfile();
   const [hidden, setHidden] = useState(true);
+  const [kind, setKind] = useState<'ios' | 'android' | 'other'>('other');
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
@@ -36,6 +45,7 @@ export function InstallHint() {
       setInstallEvent(e as BeforeInstallPromptEvent);
     };
     window.addEventListener('beforeinstallprompt', onPrompt);
+    setKind(deviceKind());
     return () => window.removeEventListener('beforeinstallprompt', onPrompt);
   }, []);
 
@@ -65,13 +75,17 @@ export function InstallHint() {
     dismiss();
   };
 
+  const body =
+    kind === 'ios'
+      ? 'On iPhone or iPad: tap Share → Add to Home Screen. Open Math Quest from that icon from now on.'
+      : kind === 'android'
+        ? 'On Android: open the browser menu → Add to Home screen.'
+        : 'On a phone, open this site and add Math Quest to the Home Screen so stars don’t disappear.';
+
   return (
     <div className="card install-hint">
-      <p style={{ marginTop: 0 }}>
-        On iPhone or iPad: tap Share → Add to Home Screen. Open Math Quest from that icon from now
-        on.
-      </p>
-      <p>On Android: open the browser menu → Add to Home screen.</p>
+      <h2>Keep stars on this device</h2>
+      <p style={{ marginTop: 0 }}>{body}</p>
       <div className="row" style={{ gap: '0.5rem', flexWrap: 'wrap' }}>
         {installEvent && (
           <button type="button" className="btn btn-primary" onClick={() => void install()}>

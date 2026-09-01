@@ -29,13 +29,19 @@ export function Layout() {
   return (
     <div className="app-shell">
       <header className="top-nav">
-        <NavLink to={profile ? '/home' : '/'} className="brand">
-          <span className="brand-mark" aria-hidden>
-            ∑
-          </span>
-          <span>Math Quest</span>
-          {firstName && <span className="nav-child">{firstName}</span>}
-        </NavLink>
+        <div className="brand">
+          <NavLink to={profile ? '/home' : '/'} className="brand-home">
+            <span className="brand-mark" aria-hidden>
+              ∑
+            </span>
+            <span className="brand-title">Math Quest</span>
+          </NavLink>
+          {firstName && (
+            <NavLink to="/" className="nav-child" title="Who’s playing?">
+              {firstName}
+            </NavLink>
+          )}
+        </div>
         {profile && (
           <nav className="nav-links" aria-label="Main">
             <NavLink

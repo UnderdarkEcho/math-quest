@@ -74,8 +74,6 @@ export function Welcome() {
         </p>
       </div>
 
-      <InstallHint />
-
       {hasKids && !adding && !restoring && (
         <div className="card stack">
           <h2>Who’s playing?</h2>
@@ -111,6 +109,8 @@ export function Welcome() {
           </button>
         </div>
       )}
+
+      {hasKids && !adding && !restoring && <InstallHint />}
 
       {restoring && (
         <div className="card stack">

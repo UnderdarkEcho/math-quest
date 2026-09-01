@@ -6,6 +6,7 @@ import type { ProfileRoster } from '../types';
 export function RestoreBackup({ onDone }: { onDone?: () => void }) {
   const { importRoster, storageStatus } = useProfile();
   const [raw, setRaw] = useState('');
+  const [showPaste, setShowPaste] = useState(false);
   const [pending, setPending] = useState<ProfileRoster | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
@@ -30,8 +31,13 @@ export function RestoreBackup({ onDone }: { onDone?: () => void }) {
 
   const apply = async (mode: 'merge' | 'replace') => {
     if (!pending) return;
-    if (storageStatus === 'unavailable') {
-      setNote('This browser will not keep progress. The restore will vanish when you leave.');
+    if (
+      mode === 'replace' &&
+      !window.confirm(
+        'Replace everyone on this device? Children only on this iPad will be removed. Save a backup first if you are unsure.',
+      )
+    ) {
+      return;
     }
     const result = await importRoster(pending, mode);
     if (!result.ok && result.status === 'unavailable') {
@@ -50,25 +56,39 @@ export function RestoreBackup({ onDone }: { onDone?: () => void }) {
         Choose backup file
         <input type="file" accept="application/json,.json" onChange={(e) => void onFile(e)} hidden />
       </label>
-      <label className="label" htmlFor="backup-paste">
-        Paste backup code
-      </label>
-      <textarea
-        id="backup-paste"
-        className="input"
-        rows={4}
-        value={raw}
-        onChange={(e) => setRaw(e.target.value)}
-        placeholder="{ … }"
-      />
       <button
         type="button"
-        className="btn btn-secondary"
-        disabled={!raw.trim()}
-        onClick={() => loadText(raw)}
+        className="btn btn-secondary btn-block"
+        onClick={() => setShowPaste((v) => !v)}
       >
-        Read pasted backup
+        Paste backup code
       </button>
+      {showPaste && (
+        <>
+          <label className="label" htmlFor="backup-paste">
+            Paste the backup text
+          </label>
+          <textarea
+            id="backup-paste"
+            className="input"
+            rows={4}
+            value={raw}
+            onChange={(e) => setRaw(e.target.value)}
+            placeholder="Paste here"
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
+          />
+          <button
+            type="button"
+            className="btn btn-secondary btn-block"
+            disabled={!raw.trim()}
+            onClick={() => loadText(raw)}
+          >
+            Read pasted backup
+          </button>
+        </>
+      )}
       {error && <div className="feedback bad">{error}</div>}
       {note && <div className="feedback ok">{note}</div>}
       {pending && (
