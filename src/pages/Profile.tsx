@@ -220,7 +220,9 @@ export function Profile() {
           before you clear Safari, sell the device, or switch browsers.
         </p>
         <button type="button" className="btn btn-primary btn-block" onClick={() => void saveBackupFile()}>
-          Save backup
+          {typeof navigator !== 'undefined' && typeof navigator.share === 'function'
+            ? 'Share backup file'
+            : 'Save backup'}
         </button>
         <button type="button" className="btn btn-secondary btn-block" onClick={() => void copyBackup()}>
           Copy backup code

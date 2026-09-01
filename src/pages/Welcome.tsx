@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { InstallHint } from '../components/InstallHint';
 import { RestoreBackup } from '../components/RestoreBackup';
 import { useProfile } from '../context/ProfileContext';
 import { THEME_IMAGES } from '../data/assets';
@@ -109,8 +108,6 @@ export function Welcome() {
           </button>
         </div>
       )}
-
-      {hasKids && !adding && !restoring && <InstallHint />}
 
       {restoring && (
         <div className="card stack">

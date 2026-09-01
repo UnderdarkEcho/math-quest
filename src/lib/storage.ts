@@ -26,6 +26,42 @@ const SCHEMA_VERSION = 2 as const;
 const THEME_IDS: ThemeId[] = ['default', 'minecraft', 'dnd', 'greek', 'small-business'];
 
 let memoryRoster: ProfileRoster | null = null;
+let probedStatus: StorageStatus | null = null;
+let writing = false;
+let queuedRoster: ProfileRoster | null = null;
+const queuedResolvers: Array<(r: PersistResult) => void> = [];
+let writeGen = 0;
+
+type PersistResult = { ok: boolean; status: StorageStatus };
+
+function snapshotRoster(roster: ProfileRoster): ProfileRoster {
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    activeId: roster.activeId,
+    profiles: roster.profiles.slice(0, MAX_PROFILES),
+  };
+}
+
+function rosterMatches(written: ProfileRoster, back: ProfileRoster | null): boolean {
+  if (!back) return false;
+  if (back.activeId !== written.activeId) return false;
+  if (back.profiles.length !== written.profiles.length) return false;
+  if (written.profiles.map((p) => p.id).join('\0') !== back.profiles.map((p) => p.id).join('\0')) {
+    return false;
+  }
+  if (!written.activeId) return true;
+  const wActive = written.profiles.find((p) => p.id === written.activeId);
+  const bActive = back.profiles.find((p) => p.id === back.activeId);
+  if (!wActive || !bActive) return false;
+  return wActive.updatedAt === bActive.updatedAt && wActive.totalXp === bActive.totalXp;
+}
+
+function statusAfterWrite(idbOk: boolean, lsOk: boolean): PersistResult {
+  if (!idbOk && !lsOk) return { ok: false, status: 'unavailable' };
+  if (probedStatus === 'ephemeral') return { ok: true, status: 'ephemeral' };
+  if (probedStatus === 'unavailable') return { ok: true, status: 'unavailable' };
+  return { ok: true, status: 'ok' };
+}
 
 export function emptyRoster(): ProfileRoster {
   return { schemaVersion: SCHEMA_VERSION, activeId: null, profiles: [] };
@@ -252,10 +288,11 @@ function likelyPrivateBrowsing(): boolean {
 export async function probeStorage(): Promise<StorageStatus> {
   const ls = probeLocalStorage();
   const idb = await probeIdb();
-  if (!ls && !idb) return 'unavailable';
-  if (!ls && idb) return 'ok';
-  if (likelyPrivateBrowsing() && !idb) return 'ephemeral';
-  return 'ok';
+  let status: StorageStatus = 'ok';
+  if (!ls && !idb) status = 'unavailable';
+  else if (likelyPrivateBrowsing()) status = 'ephemeral';
+  probedStatus = status;
+  return status;
 }
 
 function readLsRoster(): ProfileRoster | null {
@@ -282,8 +319,9 @@ function writeLsRoster(roster: ProfileRoster): boolean {
   try {
     localStorage.setItem(LS_ROSTER, JSON.stringify(roster));
     localStorage.setItem(LS_VERSION, String(SCHEMA_VERSION));
-    const back = localStorage.getItem(LS_ROSTER);
-    return !!back && back.length > 0;
+    const raw = localStorage.getItem(LS_ROSTER);
+    if (!raw) return false;
+    return rosterMatches(roster, normalizeRoster(JSON.parse(raw) as unknown));
   } catch {
     return false;
   }
@@ -330,33 +368,64 @@ export async function loadRoster(): Promise<ProfileRoster> {
   return empty;
 }
 
-export async function saveRoster(
-  roster: ProfileRoster,
-): Promise<{ ok: boolean; status: StorageStatus }> {
-  const next: ProfileRoster = {
-    schemaVersion: SCHEMA_VERSION,
-    activeId: roster.activeId,
-    profiles: roster.profiles.slice(0, MAX_PROFILES),
-  };
+async function writeNow(roster: ProfileRoster): Promise<PersistResult> {
+  const next = snapshotRoster(roster);
   memoryRoster = next;
+  const gen = writeGen;
 
   let idbOk = false;
   try {
     await idbPut(next);
+    if (gen !== writeGen) return statusAfterWrite(false, false);
     const back = normalizeRoster(await idbGet());
-    idbOk = !!back && back.activeId === next.activeId && back.profiles.length === next.profiles.length;
+    idbOk = rosterMatches(next, back);
   } catch {
     idbOk = false;
   }
 
-  const lsOk = writeLsRoster(next);
+  if (gen !== writeGen) return statusAfterWrite(idbOk, false);
 
-  if (idbOk || lsOk) return { ok: true, status: 'ok' };
-  return { ok: false, status: 'unavailable' };
+  const lsOk = writeLsRoster(next);
+  return statusAfterWrite(idbOk, lsOk);
+}
+
+async function drainWrites(): Promise<void> {
+  if (writing) return;
+  writing = true;
+  try {
+    while (queuedRoster) {
+      const payload = queuedRoster;
+      queuedRoster = null;
+      const waiting = queuedResolvers.splice(0);
+      const result = await writeNow(payload);
+      for (const resolve of waiting) resolve(result);
+    }
+  } finally {
+    writing = false;
+    if (queuedRoster) void drainWrites();
+  }
+}
+
+export function saveRoster(roster: ProfileRoster): Promise<PersistResult> {
+  const next = snapshotRoster(roster);
+  memoryRoster = next;
+  queuedRoster = next;
+  return new Promise((resolve) => {
+    queuedResolvers.push(resolve);
+    void drainWrites();
+  });
 }
 
 export async function clearAll(): Promise<void> {
+  writeGen += 1;
+  queuedRoster = null;
   memoryRoster = emptyRoster();
+  const leftover = queuedResolvers.splice(0);
+  const cleared: PersistResult = { ok: true, status: probedStatus ?? 'ok' };
+  for (const resolve of leftover) resolve(cleared);
+  while (writing) {
+    await new Promise((r) => setTimeout(r, 0));
+  }
   try {
     await idbDelete(IDB_KEY);
   } catch {
